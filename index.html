@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Gomoku 五子棋</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Helvetica Neue, sans-serif;
+            background-color: #FAFAFA;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #1D1D1F;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: #1D1D1F;
+            letter-spacing: -0.02em;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .status {
+            font-size: 1.1rem;
+            color: #86868B;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status-indicator {
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background-color: #1D1D1F;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .status-indicator.white {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E5E7;
+        }
+
+        .board-wrapper {
+            background-color: #FFFFFF;
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(15, 1fr);
+            grid-template-rows: repeat(15, 1fr);
+            background-color: #F5F5F7;
+            border: 2px solid #E5E5E7;
+            border-radius: 4px;
+            width: min(75vw, 75vh, 450px);
+            height: min(75vw, 75vh, 450px);
+            position: relative;
+        }
+
+        .cell {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+
+        .cell::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background-color: #E5E5E7;
+            z-index: 0;
+        }
+
+        .cell::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: #E5E5E7;
+            z-index: 0;
+        }
+
+        .cell:first-child::before {
+            left: 50%;
+        }
+
+        .cell:nth-child(15)::after {
+            top: 50%;
+        }
+
+        .cell:nth-child(n+211):nth-child(-n+225)::after {
+            bottom: 50%;
+        }
+
+        .piece {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            position: relative;
+            z-index: 1;
+            transform: scale(0.8);
+            animation: placePiece 300ms cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+        }
+
+        .piece.black {
+            background-color: #1D1D1F;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+
+        .piece.white {
+            background-color: #FFFFFF;
+            border: 1px solid #E5E5E7;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .piece.last-move::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 30%;
+            height: 30%;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.9);
+        }
+
+        .piece.black.last-move::after {
+            background-color: rgba(255,255,255,0.5);
+        }
+
+        .piece.winner {
+            animation: goldPulse 600ms ease-in-out infinite;
+        }
+
+        @keyframes placePiece {
+            from {
+                transform: scale(0.8);
+            }
+            to {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes goldPulse {
+            0%, 100% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7), 0 2px 6px rgba(0,0,0,0.3);
+            }
+            50% {
+                box-shadow: 0 0 0 6px rgba(255, 215, 0, 0), 0 2px 6px rgba(0,0,0,0.3);
+            }
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-family: inherit;
+            font-weight: 500;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: background-color 200ms ease, transform 100ms ease;
+        }
+
+        .btn:active {
+            transform: scale(0.97);
+        }
+
+        .btn-primary {
+            background-color: #0071E3;
+            color: #FFFFFF;
+        }
+
+        .btn-primary:hover {
+            background-color: #0077ED;
+        }
+
+        .btn-secondary {
+            background-color: #F5F5F7;
+            color: #1D1D1F;
+        }
+
+        .btn-secondary:hover {
+            background-color: #E5E5E7;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 1.25rem;
+            }
+
+            .board-wrapper {
+                padding: 12px;
+            }
+
+            .btn {
+                padding: 10px 20px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <h1>Gomoku 五子棋</h1>
+        <div class="status">
+            <span class="status-indicator" id="statusIndicator"></span>
+            <span id="statusText">黑方先行</span>
+        </div>
+        <div class="board-wrapper">
+            <div class="board" id="board"></div>
+        </div>
+        <div class="buttons">
+            <button class="btn btn-secondary" id="undoBtn">Undo</button>
+            <button class="btn btn-primary" id="newGameBtn">New Game</button>
+        </div>
+    </div>
+
+    <script>
+        const BOARD_SIZE = 15;
+        let board = [];
+        let currentPlayer = 'black';
+        let gameOver = false;
+        let history = [];
+
+        const boardEl = document.getElementById('board');
+        const statusIndicator = document.getElementById('statusIndicator');
+        const statusText = document.getElementById('statusText');
+        const undoBtn = document.getElementById('undoBtn');
+        const newGameBtn = document.getElementById('newGameBtn');
+
+        function init() {
+            board = Array(BOARD_SIZE).fill(null).map(() => Array(BOARD_SIZE).fill(null));
+            currentPlayer = 'black';
+            gameOver = false;
+            history = [];
+            renderBoard();
+            updateStatus();
+        }
+
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let row = 0; row < BOARD_SIZE; row++) {
+                for (let col = 0; col < BOARD_SIZE; col++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', () => handleClick(row, col));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleClick(row, col) {
+            if (gameOver || board[row][col] !== null) return;
+
+            board[row][col] = currentPlayer;
+            history.push({ row, col, player: currentPlayer });
+
+            renderBoard();
+            highlightLastMove(row, col);
+
+            if (checkWin(row, col, currentPlayer)) {
+                gameOver = true;
+                statusText.textContent = currentPlayer === 'black' ? '黑方獲勝！' : '白方獲勝！';
+                return;
+            }
+
+            currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+            updateStatus();
+        }
+
+        function highlightLastMove(row, col) {
+            const cellIndex = row * BOARD_SIZE + col;
+            const cell = boardEl.children[cellIndex];
+            const piece = cell.querySelector('.piece');
+            if (piece) {
+                piece.classList.add('last-move');
+            }
+        }
+
+        function checkWin(row, col, player) {
+            const directions = [
+                [0, 1],
+                [1, 0],
+                [1, 1],
+                [1, -1]
+            ];
+
+            for (const [dr, dc] of directions) {
+                let count = 1;
+                const winningCells = [[row, col]];
+
+                for (let i = 1; i < 5; i++) {
+                    const r = row + dr * i;
+                    const c = col + dc * i;
+                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
+                        count++;
+                        winningCells.push([r, c]);
+                    } else {
+                        break;
+                    }
+                }
+
+                for (let i = 1; i < 5; i++) {
+                    const r = row - dr * i;
+                    const c = col - dc * i;
+                    if (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] === player) {
+                        count++;
+                        winningCells.push([r, c]);
+                    } else {
+                        break;
+                    }
+                }
+
+                if (count >= 5) {
+                    highlightWinningCells(winningCells);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        function highlightWinningCells(cells) {
+            for (const [r, c] of cells) {
+                const cellIndex = r * BOARD_SIZE + c;
+                const cell = boardEl.children[cellIndex];
+                const piece = cell.querySelector('.piece');
+                if (piece) {
+                    piece.classList.add('winner');
+                }
+            }
+        }
+
+        function updateStatus() {
+            statusIndicator.className = 'status-indicator' + (currentPlayer === 'white' ? ' white' : '');
+            statusText.textContent = currentPlayer === 'black' ? '黑方回合' : '白方回合';
+        }
+
+        function undo() {
+            if (history.length === 0 || gameOver) return;
+
+            const lastMove = history.pop();
+            board[lastMove.row][lastMove.col] = null;
+            currentPlayer = lastMove.player;
+
+            renderBoard();
+
+            if (history.length > 0) {
+                const prevMove = history[history.length - 1];
+                highlightLastMove(prevMove.row, prevMove.col);
+            }
+
+            updateStatus();
+        }
+
+        undoBtn.addEventListener('click', undo);
+        newGameBtn.addEventListener('click', init);
+
+        init();
+    </script>
+</body>
+</html>
